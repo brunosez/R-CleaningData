@@ -37,6 +37,12 @@ run_analysis <- function(directory ="./data/UCI-HAR-Dataset") {
   
    X_train<-cbind(X_train,y_train)
   
+  tmp = paste(directory, "/train/subject_train.txt", sep = "")
+  
+  subject_train<-read.csv(tmp,stringsAsFactors=TRUE, header=FALSE,sep="",encoding="UTF-8")
+  ## concatenate the clien from subject_test
+  X_train<-cbind(X_train, subject_train)
+  
   }
   else {
     
@@ -59,15 +65,22 @@ run_analysis <- function(directory ="./data/UCI-HAR-Dataset") {
     
     X_test<-cbind(X_test,y_test)
     
+    tmp = paste(directory, "/test/subject_test.txt", sep = "")
+    
+    subject_test<-read.csv(tmp,stringsAsFactors=TRUE, header=FALSE,sep="",encoding="UTF-8")
+    ## concatenate the clien from subject_test
+    X_test<-cbind(X_test, subject_test)
+    
   }
   else {
     
     print("test files not found !!")
   }
-  
+  print(dim(X_train))
+  print(dim(X_test))
   merge1<-rbind(X_train,X_test)
   print(dim(merge1))
-  ## At this step we have last column with the activity
+  ## At this step we have two last column with the activity and client number
   
   ## End of Step 1, Data set named merge1
   
@@ -77,32 +90,49 @@ run_analysis <- function(directory ="./data/UCI-HAR-Dataset") {
   ## too long to check one by one !
   tmp = paste(directory, "/features.txt", sep = "")
   
-  features<-read.csv(tmp, header=FALSE,sep="",encoding="UTF-8")
+  features<-read.csv(tmp, stringsAsFactor=FALSE, header=FALSE,sep="",encoding="UTF-8")
   
+  ## part of Step4 : names of the columns
+  names(merge1)<-features$V2
+  colnames(merge1)[563]<-"client_nb"
+  colnames(merge1)[562]<-"activity"
+  
+  ## select mean and std : 79 values
   new_features<-grep("*-mean|-std*", features[,2])
+  ## less values with this 66
+  selected <- grep("mean\\(\\)|std\\(\\)", features$V2, value = TRUE)
   print(new_features)
+  print(selected)
+  
   features<-features[new_features,]
-  features<-rbind(features,c("562","activity"))
+  .
   ## got a warning ... value activity KO
   print(features)
-  merge2<-merge1[,features[,1]]
+  
+  ##
+  ## this syntax gives also the order of the columns
+  merge2<-merge1[,c("client_nb", "activity", selected)]
   ## ok in shell KO in prog.
   dim(merge2)
   head(merge2)
   
-
   
-  ## Step 3
+  
+  ## Step 3 - - Uses descriptive activity names to name the activities in the data set
   
   activity_labels<-read.csv("./data/UCI-HAR-Dataset/activity_labels.txt",stringsAsFactors=TRUE, header=FALSE,sep="",encoding="UTF-8")
   
   merge2$activity<-factor(merge2$activity,levels = activity_labels$V1,labels = activity_labels$V2)
   
+  ## Step 4  - done above
   
+  ## Step 5 - several solutions ... tapply, ddply
+  library(plyr)
+  tidy_ds <- ddply(merge2, c("client_nb", "activity"), function(x) colMeans(x[selected]))
   
-  ## write in a merged directory
-  
-  ## write.table
-  
+ 
+  ## Write the tidy data set to a file
+  ## to be done : write in another directory
+  write.table(tidy_ds, "tidy_data_set.txt", row.names = FALSE)
   
 }
