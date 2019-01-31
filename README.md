@@ -5,6 +5,8 @@ Coursera-CourseProject
 
 This repository contains the work done for the Coursera Cleaning Data with R course
 
+Do some modification to be commit in the git training course
+
 it is 
 README.md  
 CODEBOOK.md  
